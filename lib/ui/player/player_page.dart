@@ -173,15 +173,20 @@ class _PlayerPageState extends State<PlayerPage> {
         },
       );
       dialogOnStack = true;
-      final pngs = <Uint8List>[];
+      final frames = <Uint8List>[];
+      var width = 0;
+      var height = 0;
       for (var i = 0; i < widget.episode.panels.length; i++) {
         progress.value = '正在截取 ${i + 1}/${widget.episode.panels.length}';
         setState(() => _captureIndex = i);
         entry.markNeedsBuild();
-        pngs.add(await _captureFrame());
+        final shot = await _captureFrame();
+        width = shot.width;
+        height = shot.height;
+        frames.add(shot.rgba);
       }
       progress.value = '正在合成';
-      final path = await GifExport.save(widget.episode, pngs);
+      final path = await GifExport.save(widget.episode, frames, width: width, height: height);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已导出 $path')));
       if (Platform.isWindows) {
@@ -200,16 +205,19 @@ class _PlayerPageState extends State<PlayerPage> {
     }
   }
 
-  Future<Uint8List> _captureFrame() async {
+  Future<({int width, int height, Uint8List rgba})> _captureFrame() async {
     for (var i = 0; i < 6; i++) {
       await WidgetsBinding.instance.endOfFrame;
       final boundary = _captureKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null || !boundary.hasSize || boundary.size.isEmpty) continue;
       try {
-        final image = await boundary.toImage(pixelRatio: 1.5);
-        final data = await image.toByteData(format: ui.ImageByteFormat.png);
+        final image = await boundary.toImage();
+        final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        final width = image.width;
+        final height = image.height;
         image.dispose();
-        if (data != null) return data.buffer.asUint8List();
+        if (data == null) continue;
+        return (width: width, height: height, rgba: data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
       } catch (_) {}
     }
     throw StateError('画面截取失败');

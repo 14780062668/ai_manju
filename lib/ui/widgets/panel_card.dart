@@ -12,7 +12,8 @@ class PanelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = Color(episode.style.accent);
-    return ClipRRect(
+    return RepaintBoundary(
+      child: ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -101,6 +102,7 @@ class PanelCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

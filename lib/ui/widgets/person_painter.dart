@@ -7,6 +7,20 @@ const castCloth = <Color>[
   Color(0xFFF2A3C7),
 ];
 
+final _labelCache = <String, TextPainter>{};
+
+TextPainter _nameLabel(String name) {
+  return _labelCache.putIfAbsent(name, () {
+    return TextPainter(
+      text: TextSpan(
+        text: name,
+        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+  });
+}
+
 /// 按序号区分发型，保证同一角色在分镜和角色图里长得一样。
 void paintPerson(Canvas canvas, Offset foot, double scale, int index, {String? name}) {
   final cloth = castCloth[index % castCloth.length];
@@ -50,13 +64,6 @@ void paintPerson(Canvas canvas, Offset foot, double scale, int index, {String? n
     ..close();
   canvas.drawPath(body, Paint()..color = cloth);
   if (name == null || name.isEmpty) return;
-  final label = TextPainter(
-    text: TextSpan(
-      text: name,
-      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-    ),
-    textDirection: TextDirection.ltr,
-  )..layout();
+  final label = _nameLabel(name);
   label.paint(canvas, Offset(foot.dx - label.width / 2, head.dy - 34 * scale));
-  label.dispose();
 }

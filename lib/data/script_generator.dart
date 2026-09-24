@@ -5,6 +5,13 @@ class ScriptGenerator {
       '夜雨里，林晚推开老街茶馆的门。掌柜抬头说道：「这么晚还出门？」林晚把一封信放在柜上：「有人让我把这个交给你。」掌柜拆开信，脸色变了，低声道：「这是十年前的旧案。」门外忽然响起脚步。黑衣人站在雨里，冷声道：「信交出来。」林晚挡在柜前：「想拿，先问过我。」';
 
   static const _maxPanels = 24;
+  static final _speechVerb = RegExp(r'([\u4e00-\u9fa5]{2,3})(?:抬头|起身|转身)?(?:说道|问道|喊道|笑道|冷声道|低声道)');
+  static final _leadName = RegExp(r'^([\u4e00-\u9fa5]{2,3})(?=站|走|推|看|把|挡|抬|拆|坐|来)');
+  static final _actionName = RegExp(r'([\u4e00-\u9fa5]{2,3})(?=把|给|向|对|去|来|推|走|看|站|挡|送)');
+  static final _quote = RegExp('[「“"]([^」”"]+)[」”]');
+  static final _speechTail = RegExp(r'(抬头|起身|转身)?(?:说道|问道|喊道|笑道|冷声道|低声道)');
+  static final _edgePunct = RegExp(r'^[，。、：:\s]+|[，。、：:\s]+$');
+  static final _wideShot = RegExp('推开|走进|远远|街头|夜色|门外');
   static const _stopNames = {
     '然后',
     '突然',
@@ -100,8 +107,7 @@ class ScriptGenerator {
 
   List<String> _pickNames(String text) {
     final names = <String>[];
-    final verb = RegExp(r'([\u4e00-\u9fa5]{2,3})(?=把|给|向|对|去|来|推|走|看|站|挡|送)');
-    for (final match in verb.allMatches(text)) {
+    for (final match in _actionName.allMatches(text)) {
       final raw = match.group(1)!;
       const keep3 = {'黑衣人', '小姑娘', '老掌柜'};
       _addName(names, raw.length == 3 && !keep3.contains(raw) ? raw.substring(1) : raw);
@@ -148,13 +154,11 @@ class ScriptGenerator {
 
   List<String> _collectNames(List<String> sentences) {
     final names = <String>[];
-    final verb = RegExp(r'([\u4e00-\u9fa5]{2,3})(?:抬头|起身|转身)?(?:说道|问道|喊道|笑道|冷声道|低声道)');
-    final lead = RegExp(r'^([\u4e00-\u9fa5]{2,3})(?=站|走|推|看|把|挡|抬|拆|坐|来)');
     for (final sentence in sentences) {
-      for (final match in verb.allMatches(sentence)) {
+      for (final match in _speechVerb.allMatches(sentence)) {
         _addName(names, match.group(1));
       }
-      final leadMatch = lead.firstMatch(sentence);
+      final leadMatch = _leadName.firstMatch(sentence);
       _addName(names, leadMatch?.group(1));
     }
     return names.take(6).toList();
@@ -166,18 +170,17 @@ class ScriptGenerator {
   }
 
   _Parsed _parseLine(String sentence, List<String> cast) {
-    final quoted = RegExp('[「“"]([^」”"]+)[」”"]').firstMatch(sentence);
+    final quoted = _quote.firstMatch(sentence);
     final line = quoted?.group(1)?.trim() ?? '';
     var narration = sentence;
     if (quoted != null) {
       narration = sentence.replaceRange(quoted.start, quoted.end, '').trim();
-      narration = narration.replaceAll(RegExp(r'(抬头|起身|转身)?(?:说道|问道|喊道|笑道|冷声道|低声道)'), '');
-      narration = narration.replaceAll(RegExp(r'^[，。、：:\s]+|[，。、：:\s]+$'), '');
+      narration = narration.replaceAll(_speechTail, '');
+      narration = narration.replaceAll(_edgePunct, '');
     }
     var speaker = '旁白';
     if (line.isNotEmpty) {
-      final verb = RegExp(r'([\u4e00-\u9fa5]{2,3})(?:抬头|起身|转身)?(?:说道|问道|喊道|笑道|冷声道|低声道)');
-      final named = verb.firstMatch(sentence)?.group(1);
+      final named = _speechVerb.firstMatch(sentence)?.group(1);
       if (named != null && !_stopNames.contains(named)) {
         speaker = named;
       } else {
@@ -196,7 +199,7 @@ class ScriptGenerator {
 
   String _pickShot(String sentence, String line, int index) {
     if (line.isNotEmpty && line.length <= 12) return '特写';
-    if (RegExp('推开|走进|远远|街头|夜色|门外').hasMatch(sentence)) return '远景';
+    if (_wideShot.hasMatch(sentence)) return '远景';
     return index.isEven ? '中景' : '近景';
   }
 
@@ -218,14 +221,13 @@ class ScriptGenerator {
       '海': '海边',
       '桥': '桥上',
     };
+    // 优先用更长的地名，避免「茶馆」被单个「门」盖掉。
     String? found;
-    var pos = 1 << 30;
+    var bestLength = 0;
     for (final entry in places.entries) {
-      final index = sentence.indexOf(entry.key);
-      if (index >= 0 && index < pos) {
-        pos = index;
-        found = entry.value;
-      }
+      if (!sentence.contains(entry.key) || entry.key.length <= bestLength) continue;
+      bestLength = entry.key.length;
+      found = entry.value;
     }
     return found ?? current;
   }

@@ -14,6 +14,7 @@ class CreatePage extends StatefulWidget {
 
 class _CreatePageState extends State<CreatePage> {
   final _controller = TextEditingController();
+  final _length = ValueNotifier(0);
   final _generator = ScriptGenerator();
   static const _prompts = <(String, String)>[
     ('茶馆送信', '雨夜林晚到茶馆送信，黑衣人来抢'),
@@ -32,8 +33,14 @@ class _CreatePageState extends State<CreatePage> {
 
   @override
   void dispose() {
+    _length.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _fill(String text) {
+    _controller.text = text;
+    _length.value = text.trim().length;
   }
 
   Future<void> _load() async {
@@ -101,8 +108,6 @@ class _CreatePageState extends State<CreatePage> {
   @override
   Widget build(BuildContext context) {
     final accent = Color(_style.accent);
-    final count = _controller.text.trim().length;
-    final ready = count >= 4;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -164,7 +169,7 @@ class _CreatePageState extends State<CreatePage> {
                   controller: _controller,
                   minLines: 5,
                   maxLines: 8,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (value) => _length.value = value.trim().length,
                   decoration: InputDecoration(
                     hintText: '写一句故事，例如：雨夜林晚到茶馆送信',
                     filled: true,
@@ -180,28 +185,34 @@ class _CreatePageState extends State<CreatePage> {
                     for (final prompt in _prompts)
                       ActionChip(
                         label: Text(prompt.$1),
-                        onPressed: () => setState(() => _controller.text = prompt.$2),
+                        onPressed: () => _fill(prompt.$2),
                       ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => setState(() => _controller.text = ScriptGenerator.sampleStory),
-                      child: const Text('完整示例'),
-                    ),
-                    if (_controller.text.isNotEmpty)
-                      TextButton(
-                        onPressed: () => setState(_controller.clear),
-                        child: const Text('清空'),
-                      ),
-                    const Spacer(),
-                    Text(
-                      ready ? '$count 字' : '至少 4 个字',
-                      style: TextStyle(color: ready ? Colors.white38 : accent, fontSize: 12),
-                    ),
-                  ],
+                ValueListenableBuilder<int>(
+                  valueListenable: _length,
+                  builder: (context, count, _) {
+                    final enough = count >= 4;
+                    return Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => _fill(ScriptGenerator.sampleStory),
+                          child: const Text('完整示例'),
+                        ),
+                        if (count > 0)
+                          TextButton(
+                            onPressed: () => _fill(''),
+                            child: const Text('清空'),
+                          ),
+                        const Spacer(),
+                        Text(
+                          enough ? '$count 字' : '至少 4 个字',
+                          style: TextStyle(color: enough ? Colors.white38 : accent, fontSize: 12),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 if (_saved.isNotEmpty) ...[
                   const SizedBox(height: 28),
@@ -241,19 +252,24 @@ class _CreatePageState extends State<CreatePage> {
               ],
             ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                  child: FilledButton(
-                    onPressed: ready ? _generate : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: Colors.black,
-                      disabledBackgroundColor: const Color(0xFF2A2A30),
-                      disabledForegroundColor: Colors.white38,
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    child: const Text('生成漫剧'),
-                  ),
+                ValueListenableBuilder<int>(
+                  valueListenable: _length,
+                  builder: (context, count, _) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                      child: FilledButton(
+                        onPressed: count >= 4 ? _generate : null,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: accent,
+                          foregroundColor: Colors.black,
+                          disabledBackgroundColor: const Color(0xFF2A2A30),
+                          disabledForegroundColor: Colors.white38,
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                        child: const Text('生成漫剧'),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

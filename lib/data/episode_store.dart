@@ -7,6 +7,7 @@ import 'package:ai_manju/domain/manju.dart';
 
 class EpisodeStore {
   static const _keep = 40;
+  static List<ManjuEpisode>? _cache;
 
   static Future<File> _file() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -14,13 +15,19 @@ class EpisodeStore {
   }
 
   static Future<List<ManjuEpisode>> load() async {
+    final cached = _cache;
+    if (cached != null) return List<ManjuEpisode>.of(cached);
     try {
       final file = await _file();
-      if (!file.existsSync()) return [];
+      if (!file.existsSync()) {
+        _cache = [];
+        return [];
+      }
       final list = jsonDecode(await file.readAsString()) as List;
-      return [
+      _cache = [
         for (final item in list) ManjuEpisode.fromJson(Map<String, Object?>.from(item as Map)),
       ];
+      return List<ManjuEpisode>.of(_cache!);
     } catch (_) {
       return [];
     }
@@ -31,12 +38,15 @@ class EpisodeStore {
     final all = await load();
     all.removeWhere((item) => item.id == episode.id);
     all.insert(0, episode);
-    await _write(all.take(_keep).toList());
+    final kept = all.take(_keep).toList();
+    _cache = kept;
+    await _write(kept);
   }
 
   static Future<void> remove(String id) async {
     final all = await load();
     all.removeWhere((item) => item.id == id);
+    _cache = all;
     await _write(all);
   }
 

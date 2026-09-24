@@ -140,6 +140,11 @@ class ScenePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ScenePainter oldDelegate) {
-    return oldDelegate.panel.index != panel.index || oldDelegate.style != style;
+    final previous = oldDelegate.panel;
+    return previous.index != panel.index ||
+        previous.shot != panel.shot ||
+        previous.speaker != panel.speaker ||
+        previous.location != panel.location ||
+        oldDelegate.style != style;
   }
 }
