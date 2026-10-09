@@ -281,7 +281,8 @@ class _PlayerPageState extends State<PlayerPage> {
           ),
           LinearProgressIndicator(
             value: episode.panels.isEmpty ? 0 : (_index + 1) / episode.panels.length,
-            minHeight: 2,
+            minHeight: 3,
+            borderRadius: BorderRadius.circular(2),
             color: accent,
             backgroundColor: Colors.white12,
           ),
@@ -305,9 +306,19 @@ class _PlayerPageState extends State<PlayerPage> {
                       constraints: const BoxConstraints(maxWidth: 420),
                       child: AspectRatio(
                         aspectRatio: 9 / 16,
-                        child: GestureDetector(
-                          onTap: _exporting ? null : _toggle,
-                          child: PanelCard(panel: episode.panels[index], episode: episode),
+                        // 播放中给当前镜一圈风格色光晕
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: _playing && index == _index
+                                ? [BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 24, spreadRadius: 1)]
+                                : const [],
+                          ),
+                          child: GestureDetector(
+                            onTap: _exporting ? null : _toggle,
+                            child: PanelCard(panel: episode.panels[index], episode: episode),
+                          ),
                         ),
                       ),
                     ),
@@ -317,51 +328,62 @@ class _PlayerPageState extends State<PlayerPage> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+            child: Column(
               children: [
-                IconButton(
-                  onPressed: _index == 0
-                      ? null
-                      : () => _page.previousPage(duration: const Duration(milliseconds: 280), curve: Curves.easeOut),
-                  icon: const Icon(Icons.skip_previous),
-                ),
-                const SizedBox(width: 8),
-                FilledButton.icon(
-                  onPressed: _exporting ? null : _toggle,
-                  style: FilledButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.black),
-                  icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
-                  label: Text(_playing ? '暂停' : (_index >= episode.panels.length - 1 ? '重播' : '播放')),
-                ),
-                const SizedBox(width: 8),
-                PopupMenuButton<double>(
-                  tooltip: '语速',
-                  initialValue: _rate,
-                  onSelected: _setRate,
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 0.35, child: Text('慢')),
-                    PopupMenuItem(value: 0.45, child: Text('正常')),
-                    PopupMenuItem(value: 0.6, child: Text('快')),
-                  ],
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.speed, size: 20),
-                        const SizedBox(width: 4),
-                        Text(_rate == 0.35 ? '慢' : _rate == 0.6 ? '快' : '正常', style: const TextStyle(fontSize: 12)),
-                      ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: _index == 0
+                          ? null
+                          : () => _page.previousPage(duration: const Duration(milliseconds: 280), curve: Curves.easeOut),
+                      icon: const Icon(Icons.skip_previous),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: _exporting ? null : _toggle,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(140, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      ),
+                      icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
+                      label: Text(_playing ? '暂停' : (_index >= episode.panels.length - 1 ? '重播' : '播放')),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: _index >= episode.panels.length - 1
+                          ? null
+                          : () => _page.nextPage(duration: const Duration(milliseconds: 280), curve: Curves.easeOut),
+                      icon: const Icon(Icons.skip_next),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _index >= episode.panels.length - 1
-                      ? null
-                      : () => _page.nextPage(duration: const Duration(milliseconds: 280), curve: Curves.easeOut),
-                  icon: const Icon(Icons.skip_next),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.speed, size: 16, color: Colors.white38),
+                    const SizedBox(width: 6),
+                    for (final (label, value) in const [('慢', 0.35), ('正常', 0.45), ('快', 0.6)])
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: ChoiceChip(
+                          label: Text(label),
+                          selected: _rate == value,
+                          onSelected: (_) => _setRate(value),
+                          visualDensity: VisualDensity.compact,
+                          showCheckmark: false,
+                          selectedColor: accent.withValues(alpha: 0.25),
+                          labelStyle: TextStyle(
+                            fontSize: 12,
+                            color: _rate == value ? accent : Colors.white54,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),

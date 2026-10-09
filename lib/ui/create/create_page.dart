@@ -4,6 +4,7 @@ import 'package:ai_manju/app/routes.dart';
 import 'package:ai_manju/data/episode_store.dart';
 import 'package:ai_manju/data/script_generator.dart';
 import 'package:ai_manju/domain/manju.dart';
+import 'package:ai_manju/ui/widgets/scene_painter.dart';
 
 class CreatePage extends StatefulWidget {
   const CreatePage({super.key});
@@ -105,6 +106,34 @@ class _CreatePageState extends State<CreatePage> {
     return '${time.month}/${time.day} $hour:$minute';
   }
 
+  IconData _styleIcon(ManjuStyle style) {
+    return switch (style) {
+      ManjuStyle.ancient => Icons.temple_buddhist,
+      ManjuStyle.city => Icons.location_city,
+      ManjuStyle.suspense => Icons.nightlight_round,
+      ManjuStyle.sweet => Icons.favorite,
+    };
+  }
+
+  /// 作品卡片左侧的首镜缩略图。
+  Widget _thumb(ManjuEpisode episode) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: 44,
+        height: 78,
+        child: CustomPaint(
+          painter: ScenePainter(
+            panel: episode.panels.first,
+            style: episode.style,
+            characters: episode.characters,
+            showNames: false,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final accent = Color(_style.accent);
@@ -125,7 +154,7 @@ class _CreatePageState extends State<CreatePage> {
                 const Text('写一句描述，自动生成可播放的竖屏漫剧', style: TextStyle(color: Colors.white54)),
                 const SizedBox(height: 20),
                 SizedBox(
-                  height: 76,
+                  height: 92,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: ManjuStyle.values.length,
@@ -137,7 +166,7 @@ class _CreatePageState extends State<CreatePage> {
                         onTap: () => setState(() => _style = style),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          width: 112,
+                          width: 108,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -150,14 +179,27 @@ class _CreatePageState extends State<CreatePage> {
                               color: selected ? Color(style.accent) : Colors.white12,
                               width: selected ? 2 : 1,
                             ),
+                            boxShadow: selected
+                                ? [BoxShadow(color: Color(style.accent).withValues(alpha: 0.3), blurRadius: 12)]
+                                : const [],
                           ),
-                          alignment: Alignment.bottomLeft,
-                          child: Text(
-                            style.label,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: selected ? Color(style.accent) : Colors.white,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Icon(
+                                _styleIcon(style),
+                                size: 22,
+                                color: selected ? Color(style.accent) : Colors.white70,
+                              ),
+                              Text(
+                                style.label,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: selected ? Color(style.accent) : Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -172,9 +214,14 @@ class _CreatePageState extends State<CreatePage> {
                   onChanged: (value) => _length.value = value.trim().length,
                   decoration: InputDecoration(
                     hintText: '写一句故事，例如：雨夜林晚到茶馆送信',
+                    hintStyle: const TextStyle(color: Colors.white30),
                     filled: true,
                     fillColor: const Color(0xFF17171C),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: accent.withValues(alpha: 0.6)),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -232,14 +279,37 @@ class _CreatePageState extends State<CreatePage> {
                       child: Material(
                       color: const Color(0xFF17171C),
                       borderRadius: BorderRadius.circular(14),
-                      child: ListTile(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        title: Text(episode.title),
-                        subtitle: Text(
-                          '${episode.style.label} · ${episode.panels.length}镜 · ${_when(episode.createdAt)}',
-                          style: const TextStyle(color: Colors.white54),
-                        ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
                         onTap: () => _open(episode),
+                        child: Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Row(
+                            children: [
+                              _thumb(episode),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      episode.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${episode.style.label} · ${episode.panels.length}镜 · ${_when(episode.createdAt)}',
+                                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right, color: Colors.white24),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     ),

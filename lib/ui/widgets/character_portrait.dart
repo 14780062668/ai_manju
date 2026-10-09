@@ -14,8 +14,7 @@ class CharacterPortrait extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AspectRatio(
-          aspectRatio: 3 / 4,
+        Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: CustomPaint(

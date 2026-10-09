@@ -71,30 +71,46 @@ class PanelCard extends StatelessWidget {
                     ),
                   if (panel.line.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              panel.speaker,
-                              style: TextStyle(fontSize: 12, color: accent, fontWeight: FontWeight.w700),
+                    Stack(
+                      children: [
+                        // 漫画气泡，左下带小尾巴指向说话人
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              panel.line,
-                              maxLines: 4,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 18, height: 1.35, color: Color(0xFF1A1A1A)),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    panel.speaker,
+                                    style: TextStyle(fontSize: 12, color: accent, fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    panel.line,
+                                    maxLines: 4,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 18, height: 1.35, color: Color(0xFF1A1A1A)),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        Positioned(
+                          left: 22,
+                          bottom: 0,
+                          child: Transform.rotate(
+                            angle: 0.785398,
+                            child: Container(width: 12, height: 12, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],

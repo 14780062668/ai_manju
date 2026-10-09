@@ -8,11 +8,15 @@ class ScenePainter extends CustomPainter {
     required this.panel,
     required this.style,
     required this.characters,
+    this.showNames = true,
   });
 
   final ManjuPanel panel;
   final ManjuStyle style;
   final List<String> characters;
+
+  /// 缩略图不画人名，避免小图上文字糊在一起。
+  final bool showNames;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -133,7 +137,7 @@ class ScenePainter extends CustomPainter {
         Offset(size.width * slots[n], groundY + 8),
         highlighted ? shotScale : shotScale * 0.72,
         i,
-        name: cast[i],
+        name: showNames ? cast[i] : null,
       );
     }
   }
@@ -145,6 +149,7 @@ class ScenePainter extends CustomPainter {
         previous.shot != panel.shot ||
         previous.speaker != panel.speaker ||
         previous.location != panel.location ||
-        oldDelegate.style != style;
+        oldDelegate.style != style ||
+        oldDelegate.showNames != showNames;
   }
 }
